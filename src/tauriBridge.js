@@ -124,6 +124,7 @@ const electronAPI = {
   getCameraStatus: () => invoke('get_camera_status'),
   getMicrophoneStatus: () => invoke('get_microphone_status'),
   getSystemMetrics: () => invoke('get_system_metrics'),
+  cleanRam: () => invoke('clean_ram'),
   controlSystemMedia: (command, ...args) =>
     invoke('control_system_media', {
       command: String(command || ''),

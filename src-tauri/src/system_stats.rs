@@ -11,7 +11,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, OnceLock};
 use std::thread;
 use std::time::Duration;
-use sysinfo::{CpuRefreshKind, MemoryRefreshKind, RefreshKind, System};
+use sysinfo::{CpuRefreshKind, MemoryRefreshKind, ProcessRefreshKind, RefreshKind, System};
 use tauri::{AppHandle, Emitter};
 
 #[cfg(target_os = "linux")]
@@ -54,13 +54,33 @@ use windows::{
 pub struct SystemMetrics {
     pub cpu: u32,
     pub ram: u32,
+    pub cpu_freq: f32,
+    pub cpu_brand: String,
+    pub cpu_cores: usize,
+    pub top_process: String,
+    pub ram_used_gb: f32,
+    pub ram_total_gb: f32,
+    pub ram_free_gb: f32,
+    pub disk_name: String,
+    pub disk_used_percent: u32,
+    pub disk_free_gb: f32,
+    pub disk_total_gb: f32,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct CleanRamResult {
+    pub success: bool,
+    pub freed_mb: f32,
+    pub before_used_gb: f32,
+    pub after_used_gb: f32,
 }
 
 static SYS_METRICS: Lazy<Mutex<System>> = Lazy::new(|| {
     let mut sys = System::new_with_specifics(
         RefreshKind::nothing()
             .with_cpu(CpuRefreshKind::everything())
-            .with_memory(MemoryRefreshKind::everything()),
+            .with_memory(MemoryRefreshKind::everything())
+            .with_processes(ProcessRefreshKind::everything().with_cpu()),
     );
     sys.refresh_cpu_usage();
     sys.refresh_memory();
@@ -70,7 +90,21 @@ static SYS_METRICS: Lazy<Mutex<System>> = Lazy::new(|| {
 #[tauri::command]
 pub async fn get_system_metrics() -> SystemMetrics {
     let Ok(mut sys) = SYS_METRICS.lock() else {
-        return SystemMetrics { cpu: 0, ram: 0 };
+        return SystemMetrics {
+            cpu: 0,
+            ram: 0,
+            cpu_freq: 0.0,
+            cpu_brand: String::new(),
+            cpu_cores: 0,
+            top_process: String::new(),
+            ram_used_gb: 0.0,
+            ram_total_gb: 0.0,
+            ram_free_gb: 0.0,
+            disk_name: String::new(),
+            disk_used_percent: 0,
+            disk_free_gb: 0.0,
+            disk_total_gb: 0.0,
+        };
     };
     sys.refresh_cpu_usage();
     sys.refresh_memory();
@@ -86,7 +120,154 @@ pub async fn get_system_metrics() -> SystemMetrics {
         0
     };
 
-    SystemMetrics { cpu, ram }
+    let ram_used_gb = ((used as f64 / 1_073_741_824.0) * 10.0).round() as f32 / 10.0;
+    let ram_total_gb = ((total as f64 / 1_073_741_824.0) * 10.0).round() as f32 / 10.0;
+    let ram_free_gb = (((total.saturating_sub(used)) as f64 / 1_073_741_824.0) * 10.0).round() as f32 / 10.0;
+
+    let cpus = sys.cpus();
+    let cpu_cores = cpus.len();
+    let cpu_freq = if !cpus.is_empty() {
+        let avg_mhz: u64 = cpus.iter().map(|c| c.frequency()).sum::<u64>() / cpus.len() as u64;
+        ((avg_mhz as f64 / 1000.0) * 10.0).round() as f32 / 10.0
+    } else {
+        0.0
+    };
+
+    let cpu_brand = cpus.first()
+        .map(|c| c.brand().trim().to_string())
+        .unwrap_or_default();
+
+    // Top process by CPU usage
+    sys.refresh_processes(sysinfo::ProcessesToUpdate::All, true);
+    let top_process = sys.processes()
+        .iter()
+        .filter(|(_, p)| p.cpu_usage() > 1.0)
+        .max_by(|a, b| a.1.cpu_usage().partial_cmp(&b.1.cpu_usage()).unwrap_or(std::cmp::Ordering::Equal))
+        .map(|(_, p)| {
+            let name = p.name().to_string_lossy();
+            format!("{} ({:.0}%)", name.trim_end_matches(".exe"), p.cpu_usage())
+        })
+        .unwrap_or_else(|| "Idle (0%)".to_string());
+
+    // Disks (SSD / Storage)
+    let disks = sysinfo::Disks::new_with_refreshed_list();
+    let main_disk = disks.iter().find(|d| {
+        let p = d.mount_point().to_string_lossy();
+        p.starts_with("C:") || p == "/"
+    }).or_else(|| disks.first());
+
+    let (disk_name, disk_used_percent, disk_free_gb, disk_total_gb) = if let Some(disk) = main_disk {
+        let total_d = disk.total_space();
+        let avail_d = disk.available_space();
+        let used_d = total_d.saturating_sub(avail_d);
+        let pct = if total_d > 0 {
+            ((used_d as f64 / total_d as f64) * 100.0).round().clamp(0.0, 100.0) as u32
+        } else {
+            0
+        };
+        let free_g = (avail_d as f64 / 1_073_741_824.0) as f32;
+        let total_g = (total_d as f64 / 1_073_741_824.0) as f32;
+        let name = disk.mount_point().to_string_lossy().to_string();
+        (name, pct, (free_g * 10.0).round() / 10.0, (total_g * 10.0).round() / 10.0)
+    } else {
+        ("C:\\".to_string(), 0, 0.0, 0.0)
+    };
+
+    SystemMetrics {
+        cpu,
+        ram,
+        cpu_freq,
+        cpu_brand,
+        cpu_cores,
+        top_process,
+        ram_used_gb,
+        ram_total_gb,
+        ram_free_gb,
+        disk_name,
+        disk_used_percent,
+        disk_free_gb,
+        disk_total_gb,
+    }
+}
+
+#[tauri::command]
+pub async fn clean_ram() -> CleanRamResult {
+    let before_used;
+    {
+        let Ok(mut sys) = SYS_METRICS.lock() else {
+            return CleanRamResult {
+                success: false,
+                freed_mb: 0.0,
+                before_used_gb: 0.0,
+                after_used_gb: 0.0,
+            };
+        };
+        sys.refresh_memory();
+        before_used = sys.used_memory();
+    }
+
+    #[cfg(windows)]
+    unsafe {
+        use windows::Win32::System::ProcessStatus::{EnumProcesses, K32EmptyWorkingSet};
+        use windows::Win32::System::Threading::{
+            GetCurrentProcess, OpenProcess, PROCESS_QUERY_INFORMATION, PROCESS_SET_QUOTA,
+        };
+
+        // 1. Clean current process working set
+        let _ = K32EmptyWorkingSet(GetCurrentProcess());
+
+        // 2. Enumerate accessible user processes and clean their working sets
+        let mut process_ids = [0u32; 1024];
+        let mut bytes_returned = 0u32;
+        if EnumProcesses(
+            process_ids.as_mut_ptr(),
+            (process_ids.len() * std::mem::size_of::<u32>()) as u32,
+            &mut bytes_returned,
+        )
+        .is_ok()
+        {
+            let count = (bytes_returned as usize) / std::mem::size_of::<u32>();
+            for &pid in &process_ids[..count] {
+                if pid <= 4 {
+                    continue; // Skip System and System Idle
+                }
+                if let Ok(handle) =
+                    OpenProcess(PROCESS_SET_QUOTA | PROCESS_QUERY_INFORMATION, false, pid)
+                {
+                    let _ = K32EmptyWorkingSet(handle);
+                    let _ = CloseHandle(handle);
+                }
+            }
+        }
+    }
+
+    tokio::time::sleep(Duration::from_millis(150)).await;
+
+    let after_used;
+    {
+        let Ok(mut sys) = SYS_METRICS.lock() else {
+            return CleanRamResult {
+                success: true,
+                freed_mb: 0.0,
+                before_used_gb: 0.0,
+                after_used_gb: 0.0,
+            };
+        };
+        sys.refresh_memory();
+        after_used = sys.used_memory();
+    }
+
+    let freed_bytes = before_used.saturating_sub(after_used);
+    let freed_mb = ((freed_bytes as f64 / (1024.0 * 1024.0)) * 10.0).round() as f32 / 10.0;
+    let before_gb = ((before_used as f64 / 1_073_741_824.0) * 10.0).round() as f32 / 10.0;
+    let after_gb = ((after_used as f64 / 1_073_741_824.0) * 10.0).round() as f32 / 10.0;
+
+    CleanRamResult {
+        success: true,
+        freed_mb,
+        before_used_gb: before_gb,
+        after_used_gb: after_gb,
+    }
 }
 
 #[cfg(windows)]

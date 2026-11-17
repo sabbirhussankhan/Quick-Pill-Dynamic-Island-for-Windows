@@ -197,6 +197,7 @@ pub fn run() {
             media::control_system_media,
             // System telemetry & devices
             system_stats::get_system_metrics,
+            system_stats::clean_ram,
             system_stats::get_camera_status,
             system_stats::get_microphone_status,
             system_stats::get_bluetooth_status,

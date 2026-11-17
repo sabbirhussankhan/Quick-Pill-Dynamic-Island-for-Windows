@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Camera, Mic, SkipBackIcon, Play, Pause, SkipForwardIcon, Music, Headphones, Zap, Settings, Sun, Cloud, Trash2, ChevronRight, ChevronLeft, Check, X, CloudRain, CloudSnow, CloudLightning, CloudSun, Moon, Eye, EyeOff, GripVertical, List, Search, Star, Calendar as CalendarIcon, Bell, BellOff, AlarmClock, Timer, Activity, Clock, Volume2, VolumeX, Wind, Droplets, Usb, Download, RefreshCw, Sparkles, AlertCircle, CheckCircle2, SlidersHorizontal, Palette, Compass, Layers, Quote, Copy, Shuffle, BatteryCharging, Battery, ArrowDown, ArrowUp, FolderOpen, RotateCcw, FileText, CheckCircle, Upload, Film, Package, Phone, PhoneCall, PhoneIncoming, Send, MessageSquare, ExternalLink, Undo, ChevronDown, ChevronUp, BellRing, Keyboard, Inbox } from "lucide-react";
+import { Camera, Mic, SkipBackIcon, Play, Pause, SkipForwardIcon, Music, Headphones, Zap, Settings, Sun, Cloud, Trash2, ChevronRight, ChevronLeft, Check, X, CloudRain, CloudSnow, CloudLightning, CloudSun, Moon, Eye, EyeOff, GripVertical, List, Search, Star, Calendar as CalendarIcon, Bell, BellOff, AlarmClock, Timer, Activity, Clock, Volume2, VolumeX, Wind, Droplets, Usb, Download, RefreshCw, Sparkles, AlertCircle, CheckCircle2, SlidersHorizontal, Palette, Compass, Layers, Quote, Copy, Shuffle, BatteryCharging, Battery, ArrowDown, ArrowUp, FolderOpen, RotateCcw, FileText, CheckCircle, Upload, Film, Package, Phone, PhoneCall, PhoneIncoming, Send, MessageSquare, ExternalLink, Undo, ChevronDown, ChevronUp, BellRing, Keyboard, Inbox, HardDrive } from "lucide-react";
 import "./App.css";
 import AppLauncher from "./components/AppLauncher";
 import QuickNotes from "./components/QuickNotes";
@@ -809,7 +809,9 @@ const ThreeDInstrumentDial = React.memo(({
   sublabel = "LOAD",
   value = 0,
   accentColor = "#0a84ff",
-  size = 114
+  size = 114,
+  onClick,
+  title
 }) => {
   const clamped = Math.max(0, Math.min(100, Number(value) || 0));
   const totalTicks = 28;
@@ -830,13 +832,15 @@ const ThreeDInstrumentDial = React.memo(({
 
   return (
     <div
+      onClick={onClick}
+      title={title}
       style={{
         width: size,
         height: size,
         borderRadius: '50%',
         position: 'relative',
         flexShrink: 0,
-        padding: 7,
+        padding: size <= 106 ? 6 : 7,
         boxSizing: 'border-box',
         background: 'linear-gradient(145deg, #2a2a32 0%, #17171d 55%, #0c0c10 100%)',
         boxShadow: `
@@ -849,7 +853,8 @@ const ThreeDInstrumentDial = React.memo(({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        userSelect: 'none'
+        userSelect: 'none',
+        cursor: onClick ? 'pointer' : 'default'
       }}
     >
       {/* Inner Bezel Step */}
@@ -921,7 +926,7 @@ const ThreeDInstrumentDial = React.memo(({
           >
             <span
               style={{
-                fontSize: 20,
+                fontSize: size <= 106 ? 17 : 20,
                 fontWeight: 800,
                 color: '#ffffff',
                 letterSpacing: '-0.6px',
@@ -933,10 +938,10 @@ const ThreeDInstrumentDial = React.memo(({
             </span>
             <span
               style={{
-                fontSize: 8.5,
+                fontSize: size <= 106 ? 7.5 : 8.5,
                 fontWeight: 700,
                 color: 'rgba(255, 255, 255, 0.48)',
-                letterSpacing: '0.6px',
+                letterSpacing: '0.5px',
                 marginTop: 2,
                 textTransform: 'uppercase'
               }}
@@ -949,7 +954,7 @@ const ThreeDInstrumentDial = React.memo(({
           <div
             style={{
               position: 'absolute',
-              bottom: 8,
+              bottom: size <= 106 ? 6 : 8,
               left: '50%',
               transform: 'translateX(-50%)',
               display: 'flex',
@@ -973,7 +978,7 @@ const ThreeDInstrumentDial = React.memo(({
             />
             <span
               style={{
-                fontSize: 8.5,
+                fontSize: size <= 106 ? 7.5 : 8.5,
                 fontWeight: 800,
                 color: accentColor,
                 letterSpacing: '0.5px',
@@ -1488,7 +1493,7 @@ const TABS = [
   { id: 3, name: "Now Playing", icon: (color) => <Music size={16} color={color} /> },
   { id: 4, name: "Calendar", icon: (color) => <CalendarIcon size={16} color={color} /> },
   { id: 5, name: "Notifications", icon: (color) => <Bell size={16} color={color} /> },
-  { id: 6, name: "Game / Stats", icon: (color) => <Activity size={16} color={color} /> },
+  { id: 6, name: "System Stats", icon: (color) => <Activity size={16} color={color} /> },
   { id: 7, name: "Clipboard", icon: (color) => <List size={16} color={color} /> },
   { id: 8, name: "Tasks", icon: (color) => <Check size={16} color={color} /> },
   { id: 10, name: "Timer", icon: (color) => <Timer size={16} color={color} /> },
@@ -2331,6 +2336,13 @@ export default function Island() {
           if (idx16 !== -1) saved.splice(idx16 + 1, 0, 17);
           else saved.push(17);
         }
+        // Ensure Tab 6 (System Stats) is placed right after Tab 2 (Overview)
+        const idx6 = saved.indexOf(6);
+        if (idx6 !== -1) saved.splice(idx6, 1);
+        const idx2 = saved.indexOf(2);
+        if (idx2 !== -1) saved.splice(idx2 + 1, 0, 6);
+        else saved.unshift(6);
+
         // Self-healing: ensure any valid tab from TABS is included in tabOrder
         TABS.forEach(t => {
           if (!saved.includes(t.id)) saved.push(t.id);
@@ -2339,9 +2351,19 @@ export default function Island() {
         return saved;
       }
     } catch {}
-    return [2, 12, 14, 15, 16, 17, 4, 5, 6, 7, 8, 10, 0, 1, 3, 9];
+    return [2, 6, 12, 14, 15, 16, 17, 4, 5, 7, 8, 10, 0, 1, 3, 9];
   });
-  const [hiddenTabs, setHiddenTabs] = useState(() => JSON.parse(localStorage.getItem("hidden-tabs") || "[6]"));
+  const [hiddenTabs, setHiddenTabs] = useState(() => {
+    try {
+      const raw = localStorage.getItem("hidden-tabs");
+      const saved = raw ? JSON.parse(raw) : [];
+      const unhidden = Array.isArray(saved) ? saved.filter(id => id !== 6) : [];
+      localStorage.setItem("hidden-tabs", JSON.stringify(unhidden));
+      return unhidden;
+    } catch {
+      return [];
+    }
+  });
   const [defaultTabId, setDefaultTabId] = useState(() => Number(localStorage.getItem("default-tab") || 2));
 
   const moveTabOrder = (fromIdx, toIdx) => {
@@ -2368,11 +2390,36 @@ export default function Island() {
     });
   };
 
-  // Self-healing synchronization: guarantee all tabs defined in TABS exist in tabOrder
+  // Self-healing synchronization: guarantee all tabs defined in TABS exist in tabOrder and Tab 6 is unhidden
   useEffect(() => {
+    setHiddenTabs((prev) => {
+      if (prev.includes(6)) {
+        const updated = prev.filter(id => id !== 6);
+        try {
+          localStorage.setItem("hidden-tabs", JSON.stringify(updated));
+        } catch (_) {}
+        return updated;
+      }
+      return prev;
+    });
+
     setTabOrder((prev) => {
       let changed = false;
-      const updated = [...prev];
+      let updated = [...prev];
+      if (updated.includes(6)) {
+        const idx6 = updated.indexOf(6);
+        const idx2 = updated.indexOf(2);
+        if (idx2 !== -1 && idx6 !== idx2 + 1) {
+          updated.splice(idx6, 1);
+          updated.splice(idx2 + 1, 0, 6);
+          changed = true;
+        }
+      } else {
+        const idx2 = updated.indexOf(2);
+        if (idx2 !== -1) updated.splice(idx2 + 1, 0, 6);
+        else updated.unshift(6);
+        changed = true;
+      }
       TABS.forEach((t) => {
         if (!updated.includes(t.id)) {
           updated.push(t.id);
@@ -2390,7 +2437,53 @@ export default function Island() {
   }, []);
 
   const [calendarDate, setCalendarDate] = useState(new Date());
-  const [systemStats, setSystemStats] = useState({ cpu: 0, ram: 0 });
+  const [systemStats, setSystemStats] = useState({
+    cpu: 0,
+    ram: 0,
+    cpu_freq: 0,
+    cpu_brand: '',
+    cpu_cores: 0,
+    top_process: null,
+    ram_used_gb: 0,
+    ram_total_gb: 0,
+    ram_free_gb: 0,
+    disk_name: 'SSD',
+    disk_used_percent: 0,
+    disk_free_gb: 0,
+    disk_total_gb: 0
+  });
+  const [isCleaningRam, setIsCleaningRam] = useState(false);
+  const [cleanRamFeedback, setCleanRamFeedback] = useState(null);
+
+  const handleCleanRam = useCallback(async (e) => {
+    if (e && e.stopPropagation) e.stopPropagation();
+    if (isCleaningRam) return;
+    setIsCleaningRam(true);
+    setCleanRamFeedback(null);
+    try {
+      if (window.electronAPI?.cleanRam) {
+        const res = await window.electronAPI.cleanRam();
+        if (res && res.success) {
+          const freed = res.freed_mb > 0 ? `${res.freed_mb}MB` : '0MB';
+          setCleanRamFeedback(`-${freed}`);
+          if (window.electronAPI?.getSystemMetrics) {
+            const stats = await window.electronAPI.getSystemMetrics();
+            setSystemStats(stats);
+          }
+        } else {
+          setCleanRamFeedback('DONE');
+        }
+      }
+    } catch (err) {
+      console.error('Clean RAM failed:', err);
+      setCleanRamFeedback('ERR');
+    } finally {
+      setIsCleaningRam(false);
+      setTimeout(() => {
+        setCleanRamFeedback(null);
+      }, 3500);
+    }
+  }, [isCleaningRam]);
   const [notificationsList, setNotificationsList] = useState([]);
   const [notificationSnapshot, setNotificationSnapshot] = useState({
     active: [],
@@ -3425,7 +3518,7 @@ export default function Island() {
   const width = isAnyBanner
     ? (isPrayerBanner ? 320 : 300)
     : mode === "large"
-      ? (currentTab === 14 ? 885 : (currentTab === 9 ? 620 : (currentTab === 12 || currentTab === 15 ? 590 : (currentTab === 16 || currentTab === 17 ? 560 : (currentTab === 2 ? 560 : (currentTab === 1 ? 555 : 540))))))
+      ? (currentTab === 14 ? 885 : (currentTab === 9 ? 620 : (currentTab === 12 || currentTab === 15 ? 590 : (currentTab === 16 || currentTab === 17 ? 560 : (currentTab === 2 ? 560 : (currentTab === 6 ? 560 : (currentTab === 1 ? 555 : 540)))))))
       : (mode === "quick" && isPlaying && !alert && !chargingAlert && !bluetoothAlert && !cameraAlert && !microphoneAlert && !volumeAlert && !keyLockAlert && !usbAlert && !notificationAlert && !prayerAlert)
         ? nowPlayingWidth
         : (mode === "quick" || alert || chargingAlert || bluetoothAlert || cameraAlert || microphoneAlert || volumeAlert || keyLockAlert || usbAlert || notificationAlert || prayerAlert)
@@ -3436,7 +3529,7 @@ export default function Island() {
   const height = isAnyBanner
     ? 46
     : mode === "large"
-      ? (currentTab === 14 ? 278 : (currentTab === 9 ? 220 : (currentTab === 15 ? 185 : (currentTab === 16 || currentTab === 17 ? 175 : (currentTab === 12 ? 175 : (currentTab === 1 ? 162 : 145))))))
+      ? (currentTab === 14 ? 278 : (currentTab === 9 ? 220 : (currentTab === 15 ? 185 : (currentTab === 16 || currentTab === 17 ? 175 : (currentTab === 12 ? 175 : (currentTab === 1 ? 162 : (currentTab === 6 ? 160 : 145)))))))
       : 40;
 
   useEffect(() => {
@@ -8543,42 +8636,214 @@ export default function Island() {
               );
             })()}
 
-            {/* Game / System Performance Overlay Tab (3 Circular 3D Instrument Dial Gauges) */}
-            {currentTab === 6 && (
-              <div style={{
-                display: 'flex',
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-around',
-                width: '100%',
-                height: '100%',
-                padding: '10px 22px',
-                boxSizing: 'border-box',
-                userSelect: 'none'
-              }}>
-                <ThreeDInstrumentDial
-                  label="CPU"
-                  sublabel="LOAD"
-                  value={systemStats.cpu}
-                  accentColor="#0a84ff"
-                  size={116}
-                />
-                <ThreeDInstrumentDial
-                  label="RAM"
-                  sublabel="MEMORY"
-                  value={systemStats.ram}
-                  accentColor="#a855f7"
-                  size={116}
-                />
-                <ThreeDInstrumentDial
-                  label="BAT"
-                  sublabel={charging ? "CHARGING" : "POWER"}
-                  value={percent !== null ? percent : 0}
-                  accentColor={(percent || 0) <= 20 ? '#ff453a' : '#30d158'}
-                  size={116}
-                />
-              </div>
-            )}
+            {/* Game / System Performance Overlay Tab (Circular 3D Instrument Dial Gauges: CPU, RAM, SSD, BAT) */}
+            {currentTab === 6 && (() => {
+              const iosFontStack = '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Rounded", "OpenRunde", system-ui, sans-serif';
+              const dialSize = 104;
+              return (
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  width: '100%',
+                  height: '100%',
+                  padding: '8px 16px',
+                  boxSizing: 'border-box',
+                  userSelect: 'none',
+                  fontFamily: iosFontStack
+                }}>
+                  {/* Dial 1: CPU (with Frequency, Pressure / Top Process) */}
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, width: 110 }}>
+                    <ThreeDInstrumentDial
+                      label="CPU"
+                      sublabel={systemStats.cpu_freq ? `${systemStats.cpu_freq} GHz` : "LOAD"}
+                      value={systemStats.cpu}
+                      accentColor="#0a84ff"
+                      size={dialSize}
+                      title={`CPU: ${systemStats.cpu}% | Clock: ${systemStats.cpu_freq || 0} GHz | ${systemStats.cpu_brand || 'Processor'} | Top: ${systemStats.top_process || 'Normal'}`}
+                    />
+                    <div
+                      title={systemStats.top_process ? `Top CPU process: ${systemStats.top_process}` : (systemStats.cpu_brand || 'CPU')}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 3.5,
+                        maxWidth: 104,
+                        padding: '1.5px 7px',
+                        borderRadius: 999,
+                        background: 'rgba(10, 132, 255, 0.1)',
+                        border: '1px solid rgba(10, 132, 255, 0.22)',
+                        boxSizing: 'border-box'
+                      }}
+                    >
+                      <Activity size={9} color="#0a84ff" style={{ flexShrink: 0 }} />
+                      <span
+                        style={{
+                          fontSize: 8,
+                          fontWeight: 700,
+                          color: '#93c5fd',
+                          letterSpacing: '0.3px',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis'
+                        }}
+                      >
+                        {systemStats.top_process || (systemStats.cpu_cores ? `${systemStats.cpu_cores} Cores` : 'Optimal')}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Dial 2: RAM (with Used/Total GB and 1-Click Clean RAM Button) */}
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, width: 110 }}>
+                    <ThreeDInstrumentDial
+                      label="RAM"
+                      sublabel={systemStats.ram_used_gb ? `${systemStats.ram_used_gb}G/${systemStats.ram_total_gb}G` : "MEMORY"}
+                      value={systemStats.ram}
+                      accentColor="#a855f7"
+                      size={dialSize}
+                      onClick={handleCleanRam}
+                      title={`RAM: ${systemStats.ram}% used | Used: ${systemStats.ram_used_gb || 0} GB | Free: ${systemStats.ram_free_gb || 0} GB | Total: ${systemStats.ram_total_gb || 0} GB (Click to Purge Memory)`}
+                    />
+                    <button
+                      onClick={handleCleanRam}
+                      disabled={isCleaningRam}
+                      title="Click to clean memory working sets and free up RAM"
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 3.5,
+                        maxWidth: 104,
+                        padding: '1.5px 7px',
+                        borderRadius: 999,
+                        background: isCleaningRam
+                          ? 'rgba(168, 85, 247, 0.32)'
+                          : cleanRamFeedback
+                            ? 'rgba(48, 209, 88, 0.22)'
+                            : 'rgba(168, 85, 247, 0.12)',
+                        border: isCleaningRam
+                          ? '1px solid #a855f7'
+                          : cleanRamFeedback
+                            ? '1px solid #30d158'
+                            : '1px solid rgba(168, 85, 247, 0.3)',
+                        cursor: isCleaningRam ? 'wait' : 'pointer',
+                        transition: 'all 0.18s ease',
+                        outline: 'none',
+                        boxSizing: 'border-box'
+                      }}
+                    >
+                      <RefreshCw
+                        size={8.5}
+                        color={cleanRamFeedback ? "#30d158" : "#c084fc"}
+                        style={{
+                          flexShrink: 0,
+                          animation: isCleaningRam ? 'spin-kf 1s linear infinite' : 'none'
+                        }}
+                      />
+                      <span
+                        style={{
+                          fontSize: 8,
+                          fontWeight: 800,
+                          color: cleanRamFeedback ? '#86efac' : '#d8b4fe',
+                          letterSpacing: '0.4px',
+                          whiteSpace: 'nowrap'
+                        }}
+                      >
+                        {isCleaningRam ? 'CLEANING' : cleanRamFeedback ? cleanRamFeedback : 'PURGE RAM'}
+                      </span>
+                    </button>
+                  </div>
+
+                  {/* Dial 3: SSD (with Storage %, Free GB, and Drive Details) */}
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, width: 110 }}>
+                    <ThreeDInstrumentDial
+                      label="SSD"
+                      sublabel={systemStats.disk_free_gb ? `${systemStats.disk_free_gb}G FREE` : "STORAGE"}
+                      value={systemStats.disk_used_percent || 0}
+                      accentColor="#00f2fe"
+                      size={dialSize}
+                      title={`Drive: ${systemStats.disk_name || 'System Disk'} | Used: ${systemStats.disk_used_percent || 0}% | Free: ${systemStats.disk_free_gb || 0} GB | Total: ${systemStats.disk_total_gb || 0} GB`}
+                    />
+                    <div
+                      title={`Storage: ${systemStats.disk_free_gb || 0} GB free of ${systemStats.disk_total_gb || 0} GB`}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 3.5,
+                        maxWidth: 104,
+                        padding: '1.5px 7px',
+                        borderRadius: 999,
+                        background: 'rgba(0, 242, 254, 0.1)',
+                        border: '1px solid rgba(0, 242, 254, 0.22)',
+                        boxSizing: 'border-box'
+                      }}
+                    >
+                      <HardDrive size={9} color="#00f2fe" style={{ flexShrink: 0 }} />
+                      <span
+                        style={{
+                          fontSize: 8,
+                          fontWeight: 700,
+                          color: '#67e8f9',
+                          letterSpacing: '0.3px',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis'
+                        }}
+                      >
+                        {systemStats.disk_name ? `${systemStats.disk_name} (${systemStats.disk_total_gb || 0}G)` : 'NVMe Drive'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Dial 4: BAT (Battery / Power State) */}
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, width: 110 }}>
+                    <ThreeDInstrumentDial
+                      label="BAT"
+                      sublabel={charging ? "CHARGING" : "POWER"}
+                      value={percent !== null ? percent : 0}
+                      accentColor={(percent || 0) <= 20 ? '#ff453a' : '#30d158'}
+                      size={dialSize}
+                      title={`Battery: ${percent !== null ? percent + '%' : 'N/A'} | Status: ${charging ? 'Charging' : 'On Battery / AC'}`}
+                    />
+                    <div
+                      title={charging ? 'Charging via AC Adapter' : (percent !== null ? `${percent}% remaining` : 'System Power')}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 3.5,
+                        maxWidth: 104,
+                        padding: '1.5px 7px',
+                        borderRadius: 999,
+                        background: (percent || 0) <= 20 ? 'rgba(255, 69, 58, 0.1)' : 'rgba(48, 209, 88, 0.1)',
+                        border: (percent || 0) <= 20 ? '1px solid rgba(255, 69, 58, 0.22)' : '1px solid rgba(48, 209, 88, 0.22)',
+                        boxSizing: 'border-box'
+                      }}
+                    >
+                      {charging ? (
+                        <BatteryCharging size={9} color="#30d158" style={{ flexShrink: 0 }} />
+                      ) : (
+                        <Battery size={9} color={(percent || 0) <= 20 ? '#ff453a' : '#30d158'} style={{ flexShrink: 0 }} />
+                      )}
+                      <span
+                        style={{
+                          fontSize: 8,
+                          fontWeight: 700,
+                          color: (percent || 0) <= 20 ? '#fca5a5' : '#86efac',
+                          letterSpacing: '0.3px',
+                          whiteSpace: 'nowrap'
+                        }}
+                      >
+                        {charging ? "PLUGGED IN" : (percent !== null ? `${percent}% LVL` : "ONLINE")}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Clipboard Tab (Left 3D Vault Summary Pod + Right Sunken Clip Cards — Indigo Accent) */}
             {currentTab === 7 && (() => {
