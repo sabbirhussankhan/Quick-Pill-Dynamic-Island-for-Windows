@@ -8346,43 +8346,93 @@ export default function Island() {
                           <p style={{ margin: 0, fontWeight: 600 }}>No notification history</p>
                         </div>
                       ) : (
-                        notificationSnapshot.history.map((notif) => (
-                          <div key={notif.id} className="notification-card" style={{
-                            opacity: 0.82,
-                            background: 'linear-gradient(180deg, #181922 0%, #101117 100%)',
-                            border: '1px solid rgba(255, 255, 255, 0.08)',
-                            boxShadow: '0 4px 10px rgba(0,0,0,0.65), inset 0 1px 1px rgba(255,255,255,0.08)'
-                          }}>
-                            {notif.applicationIcon ? (
-                              <img src={notif.applicationIcon} className="notification-icon" alt="" />
-                            ) : (
-                              <div className="notification-icon" style={{ backgroundColor: '#090a0f', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <Bell size={14} color="#a855f7" />
-                              </div>
-                            )}
-                            <div className="notification-content">
-                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                <span className="notification-app-name">{notif.applicationName}</span>
-                                <span style={{ fontSize: 9, opacity: 0.5 }}>
-                                  {notif.dismissedAt ? formatRelativeTime(notif.dismissedAt) : ''}
-                                </span>
-                              </div>
-                              <span className="notification-title">{notif.title}</span>
-                              <span className="notification-body">{notif.body}</span>
-                            </div>
-                            {notif.applicationId && (
-                              <button
-                                type="button"
-                                className="notification-action-btn"
-                                style={{ alignSelf: 'center' }}
-                                onClick={() => handleExecuteAction(notif.id, 'open', { appId: notif.applicationId })}
-                                title="Open App"
-                              >
-                                <ExternalLink size={12} />
-                              </button>
-                            )}
+                        <>
+                          <div
+                            style={{
+                              position: 'sticky',
+                              top: 0,
+                              zIndex: 5,
+                              background: '#090a0f',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              padding: '2px 4px 6px 4px',
+                              marginBottom: 6,
+                              borderBottom: '1px solid rgba(255, 255, 255, 0.08)'
+                            }}
+                          >
+                            <span style={{
+                              fontSize: 9.5,
+                              fontWeight: 800,
+                              color: 'rgba(255, 255, 255, 0.5)',
+                              letterSpacing: '0.5px',
+                              textTransform: 'uppercase'
+                            }}>
+                              {notificationSnapshot.history.length} {notificationSnapshot.history.length === 1 ? 'History Entry' : 'History Entries'}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => window.electronAPI?.notifications?.clearHistory?.()}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 4,
+                                background: 'linear-gradient(180deg, #2b1316 0%, #1a0b0d 100%)',
+                                border: '1px solid rgba(248, 113, 113, 0.4)',
+                                boxShadow: '0 2px 6px rgba(0,0,0,0.6)',
+                                borderRadius: 6,
+                                padding: '3px 8px',
+                                color: '#f87171',
+                                fontSize: 9.5,
+                                fontWeight: 800,
+                                cursor: 'pointer',
+                                letterSpacing: '0.4px',
+                                transition: 'all 0.15s ease'
+                              }}
+                              title="Clear all notification history"
+                            >
+                              <Trash2 size={10} color="#f87171" />
+                              <span>Clear History</span>
+                            </button>
                           </div>
-                        ))
+                          {notificationSnapshot.history.map((notif) => (
+                            <div key={notif.id} className="notification-card" style={{
+                              opacity: 0.82,
+                              background: 'linear-gradient(180deg, #181922 0%, #101117 100%)',
+                              border: '1px solid rgba(255, 255, 255, 0.08)',
+                              boxShadow: '0 4px 10px rgba(0,0,0,0.65), inset 0 1px 1px rgba(255,255,255,0.08)'
+                            }}>
+                              {notif.applicationIcon ? (
+                                <img src={notif.applicationIcon} className="notification-icon" alt="" />
+                              ) : (
+                                <div className="notification-icon" style={{ backgroundColor: '#090a0f', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                  <Bell size={14} color="#a855f7" />
+                                </div>
+                              )}
+                              <div className="notification-content">
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                  <span className="notification-app-name">{notif.applicationName}</span>
+                                  <span style={{ fontSize: 9, opacity: 0.5 }}>
+                                    {notif.dismissedAt ? formatRelativeTime(notif.dismissedAt) : ''}
+                                  </span>
+                                </div>
+                                <span className="notification-title">{notif.title}</span>
+                                <span className="notification-body">{notif.body}</span>
+                              </div>
+                              {notif.applicationId && (
+                                <button
+                                  type="button"
+                                  className="notification-action-btn"
+                                  style={{ alignSelf: 'center' }}
+                                  onClick={() => handleExecuteAction(notif.id, 'open', { appId: notif.applicationId })}
+                                  title="Open App"
+                                >
+                                  <ExternalLink size={12} />
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </>
                       )
                     ) : (
                       (() => {
@@ -8641,6 +8691,10 @@ export default function Island() {
                             {validItems.length > 0 && (
                               <div
                                 style={{
+                                  position: 'sticky',
+                                  top: 0,
+                                  zIndex: 5,
+                                  background: '#090a0f',
                                   display: 'flex',
                                   alignItems: 'center',
                                   justifyContent: 'space-between',
