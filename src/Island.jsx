@@ -8083,15 +8083,15 @@ export default function Island() {
                       })}
                     </div>
 
-                    {/* Bottom Action Capsules (Privacy + Undo + Close All) */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    {/* Bottom Action Capsules (Privacy + Undo / Close All) */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                       <button
                         type="button"
                         onClick={handleTogglePrivacy}
                         title={notificationSnapshot.settings.hidePreviews ? "Previews hidden. Click to show." : "Hide notification previews"}
                         style={{
                           height: 26,
-                          width: 26,
+                          width: 28,
                           borderRadius: 8,
                           background: notificationSnapshot.settings.hidePreviews
                             ? 'linear-gradient(180deg, #35210c 0%, #221406 100%)'
@@ -8111,64 +8111,73 @@ export default function Island() {
                         {notificationSnapshot.settings.hidePreviews ? <EyeOff size={11} color="#f59e0b" /> : <Eye size={11} />}
                       </button>
 
-                      {Boolean(notificationSnapshot.stats.hasUndo || undoToast) && (
+                      {Boolean(notificationSnapshot.stats.hasUndo || undoToast) ? (
                         <button
                           type="button"
                           onClick={handleUndoDismiss}
                           title="Undo dismissal"
                           style={{
+                            flex: 1,
+                            minWidth: 0,
                             height: 26,
-                            padding: '0 6px',
                             borderRadius: 8,
                             background: 'linear-gradient(180deg, #122c49 0%, #0b1b2e 100%)',
                             border: '1px solid rgba(56, 189, 248, 0.4)',
                             boxShadow: '0 3px 7px rgba(0,0,0,0.7), inset 0 1px 1px rgba(255,255,255,0.15)',
                             color: '#38bdf8',
-                            fontSize: 9.5,
+                            fontSize: 10,
                             fontWeight: 700,
                             cursor: 'pointer',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            gap: 3,
-                            flexShrink: 0
+                            gap: 4,
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden'
                           }}
                         >
-                          <Undo size={10} /> Undo
+                          <Undo size={11} style={{ flexShrink: 0 }} />
+                          <span style={{ whiteSpace: 'nowrap' }}>Undo</span>
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (notificationFilter === 'history') {
+                              window.electronAPI?.notifications?.clearHistory?.();
+                            } else {
+                              handleClearAll();
+                            }
+                          }}
+                          disabled={notificationFilter === 'history' ? notificationSnapshot.history.length === 0 : notificationSnapshot.stats.totalActive === 0}
+                          title={notificationFilter === 'history' ? "Clear notification history" : "Close all active notifications"}
+                          style={{
+                            flex: 1,
+                            minWidth: 0,
+                            height: 26,
+                            borderRadius: 8,
+                            background: 'linear-gradient(180deg, #2b1316 0%, #1a0b0d 100%)',
+                            border: '1px solid rgba(248, 113, 113, 0.3)',
+                            boxShadow: '0 3px 7px rgba(0,0,0,0.7), inset 0 1px 1px rgba(255,255,255,0.12)',
+                            color: '#f87171',
+                            fontSize: 10,
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            opacity: (notificationFilter === 'history' ? notificationSnapshot.history.length === 0 : notificationSnapshot.stats.totalActive === 0) ? 0.4 : 1,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 4,
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden'
+                          }}
+                        >
+                          <Trash2 size={11} style={{ flexShrink: 0 }} />
+                          <span style={{ whiteSpace: 'nowrap' }}>
+                            {notificationFilter === 'history' ? 'Clear' : 'Close All'}
+                          </span>
                         </button>
                       )}
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (notificationFilter === 'history') {
-                            window.electronAPI?.notifications?.clearHistory?.();
-                          } else {
-                            handleClearAll();
-                          }
-                        }}
-                        disabled={notificationFilter === 'history' ? notificationSnapshot.history.length === 0 : notificationSnapshot.stats.totalActive === 0}
-                        title="Close all notifications"
-                        style={{
-                          flex: 1,
-                          height: 26,
-                          borderRadius: 8,
-                          background: 'linear-gradient(180deg, #2b1316 0%, #1a0b0d 100%)',
-                          border: '1px solid rgba(248, 113, 113, 0.3)',
-                          boxShadow: '0 3px 7px rgba(0,0,0,0.7), inset 0 1px 1px rgba(255,255,255,0.12)',
-                          color: '#f87171',
-                          fontSize: 9.5,
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                          opacity: (notificationFilter === 'history' ? notificationSnapshot.history.length === 0 : notificationSnapshot.stats.totalActive === 0) ? 0.4 : 1,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: 3
-                        }}
-                      >
-                        <Trash2 size={10} /> Close All
-                      </button>
                     </div>
                   </div>
 
