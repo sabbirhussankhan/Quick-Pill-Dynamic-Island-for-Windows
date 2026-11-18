@@ -2450,7 +2450,9 @@ export default function Island() {
     disk_name: 'SSD',
     disk_used_percent: 0,
     disk_free_gb: 0,
-    disk_total_gb: 0
+    disk_total_gb: 0,
+    disk_health: 'Healthy',
+    disk_type: 'NVMe SSD'
   });
   const [isCleaningRam, setIsCleaningRam] = useState(false);
   const [cleanRamFeedback, setCleanRamFeedback] = useState(null);
@@ -8081,15 +8083,15 @@ export default function Island() {
                       })}
                     </div>
 
-                    {/* Bottom Action Capsules (Privacy + Undo / Clear) */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                    {/* Bottom Action Capsules (Privacy + Undo + Close All) */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                       <button
                         type="button"
                         onClick={handleTogglePrivacy}
                         title={notificationSnapshot.settings.hidePreviews ? "Previews hidden. Click to show." : "Hide notification previews"}
                         style={{
                           height: 26,
-                          width: 30,
+                          width: 26,
                           borderRadius: 8,
                           background: notificationSnapshot.settings.hidePreviews
                             ? 'linear-gradient(180deg, #35210c 0%, #221406 100%)'
@@ -8106,66 +8108,67 @@ export default function Island() {
                           flexShrink: 0
                         }}
                       >
-                        {notificationSnapshot.settings.hidePreviews ? <EyeOff size={12} color="#f59e0b" /> : <Eye size={12} />}
+                        {notificationSnapshot.settings.hidePreviews ? <EyeOff size={11} color="#f59e0b" /> : <Eye size={11} />}
                       </button>
 
-                      {(notificationSnapshot.stats.hasUndo || undoToast) ? (
+                      {Boolean(notificationSnapshot.stats.hasUndo || undoToast) && (
                         <button
                           type="button"
                           onClick={handleUndoDismiss}
                           title="Undo dismissal"
                           style={{
-                            flex: 1,
                             height: 26,
+                            padding: '0 6px',
                             borderRadius: 8,
                             background: 'linear-gradient(180deg, #122c49 0%, #0b1b2e 100%)',
                             border: '1px solid rgba(56, 189, 248, 0.4)',
                             boxShadow: '0 3px 7px rgba(0,0,0,0.7), inset 0 1px 1px rgba(255,255,255,0.15)',
                             color: '#38bdf8',
-                            fontSize: 10,
+                            fontSize: 9.5,
                             fontWeight: 700,
                             cursor: 'pointer',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            gap: 4
+                            gap: 3,
+                            flexShrink: 0
                           }}
                         >
-                          <Undo size={11} /> Undo
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (notificationFilter === 'history') {
-                              window.electronAPI?.notifications?.clearHistory?.();
-                            } else {
-                              handleClearAll();
-                            }
-                          }}
-                          disabled={notificationFilter === 'history' ? notificationSnapshot.history.length === 0 : notificationSnapshot.stats.totalActive === 0}
-                          title="Clear notifications"
-                          style={{
-                            flex: 1,
-                            height: 26,
-                            borderRadius: 8,
-                            background: 'linear-gradient(180deg, #2b1316 0%, #1a0b0d 100%)',
-                            border: '1px solid rgba(248, 113, 113, 0.3)',
-                            boxShadow: '0 3px 7px rgba(0,0,0,0.7), inset 0 1px 1px rgba(255,255,255,0.12)',
-                            color: '#f87171',
-                            fontSize: 10,
-                            fontWeight: 700,
-                            cursor: 'pointer',
-                            opacity: (notificationFilter === 'history' ? notificationSnapshot.history.length === 0 : notificationSnapshot.stats.totalActive === 0) ? 0.4 : 1,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: 4
-                          }}
-                        >
-                          <Trash2 size={11} /> Clear
+                          <Undo size={10} /> Undo
                         </button>
                       )}
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (notificationFilter === 'history') {
+                            window.electronAPI?.notifications?.clearHistory?.();
+                          } else {
+                            handleClearAll();
+                          }
+                        }}
+                        disabled={notificationFilter === 'history' ? notificationSnapshot.history.length === 0 : notificationSnapshot.stats.totalActive === 0}
+                        title="Close all notifications"
+                        style={{
+                          flex: 1,
+                          height: 26,
+                          borderRadius: 8,
+                          background: 'linear-gradient(180deg, #2b1316 0%, #1a0b0d 100%)',
+                          border: '1px solid rgba(248, 113, 113, 0.3)',
+                          boxShadow: '0 3px 7px rgba(0,0,0,0.7), inset 0 1px 1px rgba(255,255,255,0.12)',
+                          color: '#f87171',
+                          fontSize: 9.5,
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          opacity: (notificationFilter === 'history' ? notificationSnapshot.history.length === 0 : notificationSnapshot.stats.totalActive === 0) ? 0.4 : 1,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 3
+                        }}
+                      >
+                        <Trash2 size={10} /> Close All
+                      </button>
                     </div>
                   </div>
 
@@ -8626,6 +8629,56 @@ export default function Island() {
                               </div>
                             )}
 
+                            {validItems.length > 0 && (
+                              <div
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  padding: '2px 4px 6px 4px',
+                                  marginBottom: 6,
+                                  borderBottom: '1px solid rgba(255, 255, 255, 0.08)'
+                                }}
+                              >
+                                <span style={{
+                                  fontSize: 9.5,
+                                  fontWeight: 800,
+                                  color: 'rgba(255, 255, 255, 0.5)',
+                                  letterSpacing: '0.5px',
+                                  textTransform: 'uppercase'
+                                }}>
+                                  {validItems.length} {validItems.length === 1 ? 'Notification' : 'Notifications'}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleClearAll();
+                                  }}
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 4,
+                                    background: 'linear-gradient(180deg, #381217 0%, #200b0e 100%)',
+                                    border: '1px solid rgba(248, 113, 113, 0.4)',
+                                    boxShadow: '0 2px 6px rgba(0,0,0,0.6)',
+                                    borderRadius: 6,
+                                    padding: '3px 8px',
+                                    color: '#f87171',
+                                    fontSize: 9.5,
+                                    fontWeight: 800,
+                                    cursor: 'pointer',
+                                    letterSpacing: '0.4px',
+                                    transition: 'all 0.15s ease'
+                                  }}
+                                  title="Close and dismiss all active notifications"
+                                >
+                                  <Trash2 size={10} color="#f87171" />
+                                  <span>Close All</span>
+                                </button>
+                              </div>
+                            )}
+
                             {validItems.map(notif => renderCardItem(notif))}
                           </>
                         );
@@ -8764,10 +8817,10 @@ export default function Island() {
                       value={systemStats.disk_used_percent || 0}
                       accentColor="#00f2fe"
                       size={dialSize}
-                      title={`Drive: ${systemStats.disk_name || 'System Disk'} | Used: ${systemStats.disk_used_percent || 0}% | Free: ${systemStats.disk_free_gb || 0} GB | Total: ${systemStats.disk_total_gb || 0} GB`}
+                      title={`Drive: ${systemStats.disk_type || systemStats.disk_name || 'System Disk'} | Health: ${systemStats.disk_health || 'Healthy'} | Used: ${systemStats.disk_used_percent || 0}% | Free: ${systemStats.disk_free_gb || 0} GB | Total: ${systemStats.disk_total_gb || 0} GB`}
                     />
                     <div
-                      title={`Storage: ${systemStats.disk_free_gb || 0} GB free of ${systemStats.disk_total_gb || 0} GB`}
+                      title={`Drive: ${systemStats.disk_type || 'SSD'} - Health: ${systemStats.disk_health || 'Healthy'} (${systemStats.disk_free_gb || 0} GB free of ${systemStats.disk_total_gb || 0} GB)`}
                       style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -8793,7 +8846,7 @@ export default function Island() {
                           textOverflow: 'ellipsis'
                         }}
                       >
-                        {systemStats.disk_name ? `${systemStats.disk_name} (${systemStats.disk_total_gb || 0}G)` : 'NVMe Drive'}
+                        {systemStats.disk_health ? `HEALTH: ${systemStats.disk_health.toUpperCase()}` : (systemStats.disk_name ? `${systemStats.disk_name} (${systemStats.disk_total_gb || 0}G)` : 'NVMe Drive')}
                       </span>
                     </div>
                   </div>

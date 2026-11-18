@@ -65,6 +65,8 @@ pub struct SystemMetrics {
     pub disk_used_percent: u32,
     pub disk_free_gb: f32,
     pub disk_total_gb: f32,
+    pub disk_health: String,
+    pub disk_type: String,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -73,6 +75,54 @@ pub struct CleanRamResult {
     pub freed_mb: f32,
     pub before_used_gb: f32,
     pub after_used_gb: f32,
+}
+
+static SSD_HEALTH_CACHE: Lazy<Mutex<(String, String)>> = Lazy::new(|| {
+    Mutex::new(("Healthy".to_string(), "NVMe SSD".to_string()))
+});
+
+static SSD_HEALTH_INIT: OnceLock<()> = OnceLock::new();
+
+#[cfg(windows)]
+fn init_ssd_health_tracker() {
+    SSD_HEALTH_INIT.get_or_init(|| {
+        thread::spawn(|| {
+            use std::os::windows::process::CommandExt;
+            const CREATE_NO_WINDOW: u32 = 0x08000000;
+
+            loop {
+                let output = std::process::Command::new("powershell")
+                    .args([
+                        "-NoProfile",
+                        "-Command",
+                        "& { $d = Get-PhysicalDisk | Where-Object { $_.MediaType -eq 'SSD' -or $_.BusType -eq 'NVMe' } | Select-Object -First 1; if ($d) { Write-Output ($d.FriendlyName + '|' + $d.HealthStatus + '|' + $d.BusType) } }",
+                    ])
+                    .creation_flags(CREATE_NO_WINDOW)
+                    .output();
+
+                if let Ok(out) = output {
+                    let s = String::from_utf8_lossy(&out.stdout).trim().to_string();
+                    let parts: Vec<&str> = s.split('|').collect();
+                    if parts.len() >= 2 {
+                        let name = parts[0].trim().to_string();
+                        let health = parts[1].trim().to_string();
+                        let bus = if parts.len() >= 3 { parts[2].trim() } else { "SSD" };
+                        let display_type = if !name.is_empty() {
+                            name
+                        } else {
+                            format!("{bus} SSD")
+                        };
+
+                        if let Ok(mut cache) = SSD_HEALTH_CACHE.lock() {
+                            *cache = (health, display_type);
+                        }
+                    }
+                }
+
+                thread::sleep(Duration::from_secs(300));
+            }
+        });
+    });
 }
 
 static SYS_METRICS: Lazy<Mutex<System>> = Lazy::new(|| {
@@ -89,6 +139,24 @@ static SYS_METRICS: Lazy<Mutex<System>> = Lazy::new(|| {
 
 #[tauri::command]
 pub async fn get_system_metrics() -> SystemMetrics {
+    #[cfg(windows)]
+    init_ssd_health_tracker();
+
+    let (disk_health, disk_type) = {
+        #[cfg(windows)]
+        {
+            if let Ok(c) = SSD_HEALTH_CACHE.lock() {
+                c.clone()
+            } else {
+                ("Healthy".to_string(), "NVMe SSD".to_string())
+            }
+        }
+        #[cfg(not(windows))]
+        {
+            ("Healthy".to_string(), "SSD".to_string())
+        }
+    };
+
     let Ok(mut sys) = SYS_METRICS.lock() else {
         return SystemMetrics {
             cpu: 0,
@@ -104,6 +172,8 @@ pub async fn get_system_metrics() -> SystemMetrics {
             disk_used_percent: 0,
             disk_free_gb: 0.0,
             disk_total_gb: 0.0,
+            disk_health,
+            disk_type,
         };
     };
     sys.refresh_cpu_usage();
@@ -187,6 +257,8 @@ pub async fn get_system_metrics() -> SystemMetrics {
         disk_used_percent,
         disk_free_gb,
         disk_total_gb,
+        disk_health,
+        disk_type,
     }
 }
 
